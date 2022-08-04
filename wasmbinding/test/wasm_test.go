@@ -2,7 +2,6 @@ package wasmbinding_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -121,5 +120,4 @@ func TestSupply(t *testing.T) {
 
 	err = json.Unmarshal(res, &x)
 	require.NoError(t, err)
-	fmt.Println(x)
 }
