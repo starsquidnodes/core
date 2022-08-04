@@ -407,7 +407,6 @@ func New(
 			plan upgradetypes.Plan,
 			fromVM module.VersionMap,
 		) (module.VersionMap, error) {
-			fromVM[oracletypes.ModuleName] = 1
 			return app.mm.RunMigrations(ctx, cfg, fromVM)
 		})
 	// register the staking hooks
