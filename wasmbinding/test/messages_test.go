@@ -41,22 +41,22 @@ func TestCreateDenom(t *testing.T) {
 	fundAccount(t, ctx, app, actor, actorAmount)
 
 	specs := map[string]struct {
-		createDenom *wasm.CreateDenom
+		createDenom *wasm.Create
 		expErr      bool
 	}{
 		"valid sub-denom": {
-			createDenom: &wasm.CreateDenom{
+			createDenom: &wasm.Create{
 				Subdenom: "MOON",
 			},
 		},
 		"empty sub-denom": {
-			createDenom: &wasm.CreateDenom{
+			createDenom: &wasm.Create{
 				Subdenom: "",
 			},
 			expErr: false,
 		},
 		"invalid sub-denom": {
-			createDenom: &wasm.CreateDenom{
+			createDenom: &wasm.Create{
 				Subdenom: "sub-denom_2",
 			},
 			expErr: true,
@@ -69,7 +69,7 @@ func TestCreateDenom(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			// when
-			gotErr := wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, actor, spec.createDenom)
+			gotErr := wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, actor, spec.createDenom)
 			// then
 			if spec.expErr {
 				require.Error(t, gotErr)
@@ -93,63 +93,63 @@ func TestChangeAdmin(t *testing.T) {
 	}{
 		"valid": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
+				Address: RandomBech32AccountAddress(),
 			},
 			actor: tokenCreator,
 		},
 		"typo in factory in denom name": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("facory/%s/%s", tokenCreator.String(), validDenom),
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   fmt.Sprintf("facory/%s/%s", tokenCreator.String(), validDenom),
+				Address: RandomBech32AccountAddress(),
 			},
 			actor:     tokenCreator,
 			expErrMsg: "denom prefix is incorrect. Is: facory.  Should be: factory: invalid denom",
 		},
 		"invalid address in denom": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", RandomBech32AccountAddress(), validDenom),
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   fmt.Sprintf("factory/%s/%s", RandomBech32AccountAddress(), validDenom),
+				Address: RandomBech32AccountAddress(),
 			},
 			actor:     tokenCreator,
 			expErrMsg: "failed changing admin from message: unauthorized account",
 		},
 		"other denom name in 3 part name": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", tokenCreator.String(), "invalid denom"),
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   fmt.Sprintf("factory/%s/%s", tokenCreator.String(), "invalid denom"),
+				Address: RandomBech32AccountAddress(),
 			},
 			actor:     tokenCreator,
 			expErrMsg: fmt.Sprintf("invalid denom: factory/%s/invalid denom", tokenCreator.String()),
 		},
 		"empty denom": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           "",
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   "",
+				Address: RandomBech32AccountAddress(),
 			},
 			actor:     tokenCreator,
 			expErrMsg: "invalid denom: ",
 		},
 		"empty address": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
-				NewAdminAddress: "",
+				Denom:   fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
+				Address: "",
 			},
 			actor:     tokenCreator,
 			expErrMsg: "address from bech32: empty address string is not allowed",
 		},
 		"creator is a different address": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
-				NewAdminAddress: RandomBech32AccountAddress(),
+				Denom:   fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
+				Address: RandomBech32AccountAddress(),
 			},
 			actor:     RandomAccountAddress(),
 			expErrMsg: "failed changing admin from message: unauthorized account",
 		},
 		"change to the same address": {
 			changeAdmin: &wasm.ChangeAdmin{
-				Denom:           fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
-				NewAdminAddress: tokenCreator.String(),
+				Denom:   fmt.Sprintf("factory/%s/%s", tokenCreator.String(), validDenom),
+				Address: tokenCreator.String(),
 			},
 			actor: tokenCreator,
 		},
@@ -168,7 +168,7 @@ func TestChangeAdmin(t *testing.T) {
 			actorAmount := sdk.NewCoins(sdk.NewCoin(types.DefaultParams().CreationFee[0].Denom, types.DefaultParams().CreationFee[0].Amount.MulRaw(100)))
 			fundAccount(t, ctx, app, tokenCreator, actorAmount)
 
-			err := wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, tokenCreator, &wasm.CreateDenom{
+			err := wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, tokenCreator, &wasm.Create{
 				Subdenom: validDenom,
 			})
 			require.NoError(t, err)
@@ -195,16 +195,16 @@ func TestMint(t *testing.T) {
 	fundAccount(t, ctx, app, creator, tokenCreationFeeAmt)
 
 	// Create denoms for valid mint tests
-	validDenom := wasm.CreateDenom{
+	validDenom := wasm.Create{
 		Subdenom: "MOON",
 	}
-	err := wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, creator, &validDenom)
+	err := wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, creator, &validDenom)
 	require.NoError(t, err)
 
-	emptyDenom := wasm.CreateDenom{
+	emptyDenom := wasm.Create{
 		Subdenom: "",
 	}
-	err = wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, creator, &emptyDenom)
+	err = wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, creator, &emptyDenom)
 	require.NoError(t, err)
 
 	validDenomStr := fmt.Sprintf("factory/%s/%s", creator.String(), validDenom.Subdenom)
@@ -220,69 +220,69 @@ func TestMint(t *testing.T) {
 	require.True(t, ok)
 
 	specs := map[string]struct {
-		mint   *wasm.MintTokens
+		mint   *wasm.Mint
 		expErr bool
 	}{
 		"valid mint": {
-			mint: &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        amount,
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    amount,
+				Recipient: lucky.String(),
 			},
 		},
 		"empty sub-denom": {
-			mint: &wasm.MintTokens{
-				Denom:         emptyDenomStr,
-				Amount:        amount,
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     emptyDenomStr,
+				Amount:    amount,
+				Recipient: lucky.String(),
 			},
 			expErr: false,
 		},
 		"nonexistent sub-denom": {
-			mint: &wasm.MintTokens{
-				Denom:         fmt.Sprintf("factory/%s/%s", creator.String(), "SUN"),
-				Amount:        amount,
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     fmt.Sprintf("factory/%s/%s", creator.String(), "SUN"),
+				Amount:    amount,
+				Recipient: lucky.String(),
 			},
 			expErr: true,
 		},
 		"invalid sub-denom": {
-			mint: &wasm.MintTokens{
-				Denom:         "sub-denom_2",
-				Amount:        amount,
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     "sub-denom_2",
+				Amount:    amount,
+				Recipient: lucky.String(),
 			},
 			expErr: true,
 		},
 		"zero amount": {
-			mint: &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        sdk.ZeroInt(),
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    sdk.ZeroInt(),
+				Recipient: lucky.String(),
 			},
 			expErr: false,
 		},
 		"negative amount": {
-			mint: &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        amount.Neg(),
-				MintToAddress: lucky.String(),
+			mint: &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    amount.Neg(),
+				Recipient: lucky.String(),
 			},
 			expErr: true,
 		},
 		"empty recipient": {
-			mint: &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        amount,
-				MintToAddress: "",
+			mint: &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    amount,
+				Recipient: "",
 			},
 			expErr: true,
 		},
 		"invalid recipient": {
-			mint: &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        amount,
-				MintToAddress: "invalid",
+			mint: &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    amount,
+				Recipient: "invalid",
 			},
 			expErr: true,
 		},
@@ -315,16 +315,16 @@ func TestBurn(t *testing.T) {
 	fundAccount(t, ctx, app, creator, tokenCreationFeeAmt)
 
 	// Create denoms for valid burn tests
-	validDenom := wasm.CreateDenom{
+	validDenom := wasm.Create{
 		Subdenom: "MOON",
 	}
-	err := wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, creator, &validDenom)
+	err := wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, creator, &validDenom)
 	require.NoError(t, err)
 
-	emptyDenom := wasm.CreateDenom{
+	emptyDenom := wasm.Create{
 		Subdenom: "",
 	}
-	err = wasm.PerformCreateDenom(*app.DenomKeeper, app.BankKeeper, ctx, creator, &emptyDenom)
+	err = wasm.PerformCreate(*app.DenomKeeper, app.BankKeeper, ctx, creator, &emptyDenom)
 	require.NoError(t, err)
 
 	lucky := RandomAccountAddress()
@@ -339,66 +339,71 @@ func TestBurn(t *testing.T) {
 	require.True(t, ok)
 
 	specs := map[string]struct {
-		burn   *wasm.BurnTokens
+		sender sdk.AccAddress
+		burn   *wasm.Burn
 		expErr bool
 	}{
 		"valid burn": {
-			burn: &wasm.BurnTokens{
-				Denom:           validDenomStr,
-				Amount:          mintAmount,
-				BurnFromAddress: creator.String(),
+			sender: creator,
+			burn: &wasm.Burn{
+				Denom:  validDenomStr,
+				Amount: mintAmount,
 			},
 			expErr: false,
 		},
 		"non admin address": {
-			burn: &wasm.BurnTokens{
-				Denom:           validDenomStr,
-				Amount:          mintAmount,
-				BurnFromAddress: lucky.String(),
+			sender: lucky,
+			burn: &wasm.Burn{
+				Denom:  validDenomStr,
+				Amount: mintAmount,
 			},
 			expErr: true,
 		},
 		"empty sub-denom": {
-			burn: &wasm.BurnTokens{
-				Denom:           emptyDenomStr,
-				Amount:          mintAmount,
-				BurnFromAddress: creator.String(),
+			sender: creator,
+			burn: &wasm.Burn{
+				Denom:  emptyDenomStr,
+				Amount: mintAmount,
 			},
 			expErr: false,
 		},
 		"invalid sub-denom": {
-			burn: &wasm.BurnTokens{
-				Denom:           "sub-denom_2",
-				Amount:          mintAmount,
-				BurnFromAddress: creator.String(),
+			sender: creator,
+			burn: &wasm.Burn{
+				Denom:  "sub-denom_2",
+				Amount: mintAmount,
 			},
 			expErr: true,
 		},
 		"non-minted denom": {
-			burn: &wasm.BurnTokens{
-				Denom:           fmt.Sprintf("factory/%s/%s", creator.String(), "SUN"),
-				Amount:          mintAmount,
-				BurnFromAddress: creator.String(),
+			sender: creator,
+			burn: &wasm.Burn{
+				Denom:  fmt.Sprintf("factory/%s/%s", creator.String(), "SUN"),
+				Amount: mintAmount,
 			},
 			expErr: true,
 		},
 		"zero amount": {
-			burn: &wasm.BurnTokens{
-				Denom:           validDenomStr,
-				Amount:          sdk.ZeroInt(),
-				BurnFromAddress: creator.String(),
+			sender: creator,
+
+			burn: &wasm.Burn{
+				Denom:  validDenomStr,
+				Amount: sdk.ZeroInt(),
 			},
 			expErr: false,
 		},
 		"negative amount": {
+			sender: creator,
+
 			burn:   nil,
 			expErr: true,
 		},
 		"null burn": {
-			burn: &wasm.BurnTokens{
-				Denom:           validDenomStr,
-				Amount:          mintAmount.Neg(),
-				BurnFromAddress: creator.String(),
+			sender: creator,
+
+			burn: &wasm.Burn{
+				Denom:  validDenomStr,
+				Amount: mintAmount.Neg(),
 			},
 			expErr: true,
 		},
@@ -407,24 +412,24 @@ func TestBurn(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			// Mint valid denom str and empty denom string for burn test
-			mintBinding := &wasm.MintTokens{
-				Denom:         validDenomStr,
-				Amount:        mintAmount,
-				MintToAddress: creator.String(),
+			mintBinding := &wasm.Mint{
+				Denom:     validDenomStr,
+				Amount:    mintAmount,
+				Recipient: creator.String(),
 			}
 			err := wasm.PerformMint(*app.DenomKeeper, app.BankKeeper, ctx, creator, mintBinding)
 			require.NoError(t, err)
 
-			emptyDenomMintBinding := &wasm.MintTokens{
-				Denom:         emptyDenomStr,
-				Amount:        mintAmount,
-				MintToAddress: creator.String(),
+			emptyDenomMintBinding := &wasm.Mint{
+				Denom:     emptyDenomStr,
+				Amount:    mintAmount,
+				Recipient: creator.String(),
 			}
 			err = wasm.PerformMint(*app.DenomKeeper, app.BankKeeper, ctx, creator, emptyDenomMintBinding)
 			require.NoError(t, err)
 
 			// when
-			gotErr := wasm.PerformBurn(*app.DenomKeeper, ctx, creator, spec.burn)
+			gotErr := wasm.PerformBurn(*app.DenomKeeper, ctx, spec.sender, spec.burn)
 			// then
 			if spec.expErr {
 				require.Error(t, gotErr)

@@ -14,75 +14,73 @@ import (
 type DenomMsg struct {
 	/// Contracts can create denoms, namespaced under the contract's address.
 	/// A contract may create any number of independent sub-denoms.
-	CreateDenom *CreateDenom `json:"create_denom,omitempty"`
+	Create *Create `json:"create,omitempty"`
 	/// Contracts can change the admin of a denom that they are the admin of.
 	ChangeAdmin *ChangeAdmin `json:"change_admin,omitempty"`
 	/// Contracts can mint native tokens for an existing factory denom
 	/// that they are the admin of.
-	MintTokens *MintTokens `json:"mint_tokens,omitempty"`
+	Mint *Mint `json:"mint,omitempty"`
 	/// Contracts can burn native tokens for an existing factory denom
 	/// that they are the admin of.
 	/// Currently, the burn from address must be the admin contract.
-	BurnTokens *BurnTokens `json:"burn_tokens,omitempty"`
+	Burn *Burn `json:"burn,omitempty"`
 }
 
-/// CreateDenom creates a new factory denom, of denomination:
+/// Create creates a new factory denom, of denomination:
 /// factory/{creating contract address}/{Subdenom}
 /// Subdenom can be of length at most 44 characters, in [0-9a-zA-Z./]
 /// The (creating contract address, subdenom) pair must be unique.
 /// The created denom's admin is the creating contract address,
 /// but this admin can be changed using the ChangeAdmin binding.
-type CreateDenom struct {
+type Create struct {
 	Subdenom string `json:"subdenom"`
 }
 
 /// ChangeAdmin changes the admin for a factory denom.
-/// If the NewAdminAddress is empty, the denom has no admin.
+/// If the Address is empty, the denom has no admin.
 type ChangeAdmin struct {
-	Denom           string `json:"denom"`
-	NewAdminAddress string `json:"new_admin_address"`
+	Denom   string `json:"denom"`
+	Address string `json:"address"`
 }
 
-type MintTokens struct {
-	Denom         string  `json:"denom"`
-	Amount        sdk.Int `json:"amount"`
-	MintToAddress string  `json:"mint_to_address"`
+type Mint struct {
+	Denom     string  `json:"denom"`
+	Amount    sdk.Int `json:"amount"`
+	Recipient string  `json:"recipient"`
 }
 
-type BurnTokens struct {
+type Burn struct {
 	Denom  string  `json:"denom"`
 	Amount sdk.Int `json:"amount"`
-	// BurnFromAddress must be set to "" for now.
-	BurnFromAddress string `json:"burn_from_address"`
 }
 
-// createDenom creates a new token denom
-func createDenom(ctx sdk.Context, contractAddr sdk.AccAddress, createDenom *CreateDenom, dk denomkeeper.Keeper, bk bankkeeper.BaseKeeper) ([]sdk.Event, [][]byte, error) {
-	err := PerformCreateDenom(dk, bk, ctx, contractAddr, createDenom)
+// create creates a new token denom
+func create(ctx sdk.Context, contractAddr sdk.AccAddress, create *Create, dk denomkeeper.Keeper, bk bankkeeper.BaseKeeper) ([]sdk.Event, [][]byte, error) {
+	err := PerformCreate(dk, bk, ctx, contractAddr, create)
 	if err != nil {
 		return nil, nil, sdkerrors.Wrap(err, "perform create denom")
 	}
 	return nil, nil, nil
 }
 
-// PerformCreateDenom is used with createDenom to create a token denom; validates the msgCreateDenom.
-func PerformCreateDenom(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, createDenom *CreateDenom) error {
-	if createDenom == nil {
+// PerformCreate is used with create to create a token denom; validates the msgCreate.
+func PerformCreate(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, create *Create) error {
+	if create == nil {
 		return wasmvmtypes.InvalidRequest{Err: "create denom null create denom"}
 	}
 
 	msgServer := denomkeeper.NewMsgServerImpl(f)
 
-	msgCreateDenom := denomtypes.NewMsgCreateDenom(contractAddr.String(), createDenom.Subdenom)
+	msgCreate := denomtypes.NewMsgCreateDenom(contractAddr.String(), create.Subdenom)
 
-	if err := msgCreateDenom.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "failed validating MsgCreateDenom")
+	if err := msgCreate.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "failed validating MsgCreate")
 	}
 
 	// Create denom
 	_, err := msgServer.CreateDenom(
 		sdk.WrapSDKContext(ctx),
-		msgCreateDenom,
+		msgCreate,
 	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "creating denom")
@@ -90,8 +88,8 @@ func PerformCreateDenom(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.C
 	return nil
 }
 
-// mintTokens mints tokens of a specified denom to an address.
-func mintTokens(ctx sdk.Context, contractAddr sdk.AccAddress, mint *MintTokens, dk denomkeeper.Keeper, bk bankkeeper.BaseKeeper) ([]sdk.Event, [][]byte, error) {
+// mint mints tokens of a specified denom to an address.
+func mint(ctx sdk.Context, contractAddr sdk.AccAddress, mint *Mint, dk denomkeeper.Keeper, bk bankkeeper.BaseKeeper) ([]sdk.Event, [][]byte, error) {
 	err := PerformMint(dk, bk, ctx, contractAddr, mint)
 	if err != nil {
 		return nil, nil, sdkerrors.Wrap(err, "perform mint")
@@ -99,18 +97,18 @@ func mintTokens(ctx sdk.Context, contractAddr sdk.AccAddress, mint *MintTokens, 
 	return nil, nil, nil
 }
 
-// PerformMint used with mintTokens to validate the mint message and mint through token factory.
-func PerformMint(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, mint *MintTokens) error {
+// PerformMint used with mint to validate the mint message and mint through token factory.
+func PerformMint(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, mint *Mint) error {
 	if mint == nil {
 		return wasmvmtypes.InvalidRequest{Err: "mint token null mint"}
 	}
-	rcpt, err := parseAddress(mint.MintToAddress)
+	_, err := parseAddress(mint.Recipient)
 	if err != nil {
 		return err
 	}
 
 	coin := sdk.Coin{Denom: mint.Denom, Amount: mint.Amount}
-	sdkMsg := denomtypes.NewMsgMint(contractAddr.String(), coin)
+	sdkMsg := denomtypes.NewMsgMint(contractAddr.String(), coin, mint.Recipient)
 	if err = sdkMsg.ValidateBasic(); err != nil {
 		return err
 	}
@@ -120,10 +118,6 @@ func PerformMint(f denomkeeper.Keeper, b bankkeeper.BaseKeeper, ctx sdk.Context,
 	_, err = msgServer.Mint(sdk.WrapSDKContext(ctx), sdkMsg)
 	if err != nil {
 		return sdkerrors.Wrap(err, "minting coins from message")
-	}
-	err = b.SendCoins(ctx, contractAddr, rcpt, sdk.NewCoins(coin))
-	if err != nil {
-		return sdkerrors.Wrap(err, "sending newly minted coins from message")
 	}
 	return nil
 }
@@ -142,7 +136,7 @@ func PerformChangeAdmin(f denomkeeper.Keeper, ctx sdk.Context, contractAddr sdk.
 	if changeAdmin == nil {
 		return wasmvmtypes.InvalidRequest{Err: "changeAdmin is nil"}
 	}
-	newAdminAddr, err := parseAddress(changeAdmin.NewAdminAddress)
+	newAdminAddr, err := parseAddress(changeAdmin.Address)
 	if err != nil {
 		return err
 	}
@@ -160,8 +154,8 @@ func PerformChangeAdmin(f denomkeeper.Keeper, ctx sdk.Context, contractAddr sdk.
 	return nil
 }
 
-// burnTokens burns tokens.
-func burnTokens(ctx sdk.Context, contractAddr sdk.AccAddress, burn *BurnTokens, dk denomkeeper.Keeper) ([]sdk.Event, [][]byte, error) {
+// burn burns tokens.
+func burn(ctx sdk.Context, contractAddr sdk.AccAddress, burn *Burn, dk denomkeeper.Keeper) ([]sdk.Event, [][]byte, error) {
 	err := PerformBurn(dk, ctx, contractAddr, burn)
 	if err != nil {
 		return nil, nil, sdkerrors.Wrap(err, "perform burn")
@@ -170,12 +164,9 @@ func burnTokens(ctx sdk.Context, contractAddr sdk.AccAddress, burn *BurnTokens, 
 }
 
 // PerformBurn performs token burning after validating tokenBurn message.
-func PerformBurn(f denomkeeper.Keeper, ctx sdk.Context, contractAddr sdk.AccAddress, burn *BurnTokens) error {
+func PerformBurn(f denomkeeper.Keeper, ctx sdk.Context, contractAddr sdk.AccAddress, burn *Burn) error {
 	if burn == nil {
 		return wasmvmtypes.InvalidRequest{Err: "burn token null mint"}
-	}
-	if burn.BurnFromAddress != "" && burn.BurnFromAddress != contractAddr.String() {
-		return wasmvmtypes.InvalidRequest{Err: "BurnFromAddress must be \"\""}
 	}
 
 	coin := sdk.Coin{Denom: burn.Denom, Amount: burn.Amount}
@@ -195,17 +186,17 @@ func PerformBurn(f denomkeeper.Keeper, ctx sdk.Context, contractAddr sdk.AccAddr
 
 // QueryCustom implements custom query interface
 func HandleMsg(dk denomkeeper.Keeper, bk bankkeeper.BaseKeeper, contractAddr sdk.AccAddress, ctx sdk.Context, q *DenomMsg) ([]sdk.Event, [][]byte, error) {
-	if q.CreateDenom != nil {
-		return createDenom(ctx, contractAddr, q.CreateDenom, dk, bk)
+	if q.Create != nil {
+		return create(ctx, contractAddr, q.Create, dk, bk)
 	}
-	if q.MintTokens != nil {
-		return mintTokens(ctx, contractAddr, q.MintTokens, dk, bk)
+	if q.Mint != nil {
+		return mint(ctx, contractAddr, q.Mint, dk, bk)
 	}
 	if q.ChangeAdmin != nil {
 		return changeAdmin(ctx, contractAddr, q.ChangeAdmin, dk)
 	}
-	if q.BurnTokens != nil {
-		return burnTokens(ctx, contractAddr, q.BurnTokens, dk)
+	if q.Burn != nil {
+		return burn(ctx, contractAddr, q.Burn, dk)
 	}
 
 	return nil, nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown Custom variant"}
