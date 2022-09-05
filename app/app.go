@@ -522,7 +522,7 @@ func New(
 		wasmDir,
 		wasmConfig,
 		supportedFeatures,
-		wasmbinding.RegisterCustomPlugins(app.BankKeeper, app.OracleKeeper, *app.DenomKeeper)...,
+		wasmbinding.RegisterCustomPlugins(app.BankKeeper, app.OracleKeeper, *app.DenomKeeper, app.AccountKeeper)...,
 	)
 
 	// register the proposal types
