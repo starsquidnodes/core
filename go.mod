@@ -4,7 +4,7 @@ go 1.18
 
 replace github.com/tendermint/tendermint v0.34.19 => github.com/Team-Kujira/tendermint v0.34.20-0.20220703161359-04f63fc186fc
 
-replace github.com/cosmos/ibc-go/v3 v3.0.0 => github.com/codehans/ibc-go/v3 v3.0.1-0.20220914153513-6f863ba275cf
+replace github.com/cosmos/ibc-go/v3 v3.0.0 => github.com/codehans/ibc-go/v3 v3.0.1-0.20220914164535-890eca3becb0
 
 require (
 	github.com/CosmWasm/wasmd v0.27.0
