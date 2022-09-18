@@ -67,8 +67,9 @@ func (m *CustomMessenger) DispatchMsg(
 				FromAddress: contractAddr.String(),
 				ToAddress:   cva.ToAddress,
 				Amount:      cva.Amount,
-				EndTime:     cva.EndTime,
-				Delayed:     cva.Delayed,
+				// Timestamp is picoseconds. MsgCreateVestingAccount expects seconds
+				EndTime: int64(cva.EndTime.Uint64() / 1000000000),
+				Delayed: cva.Delayed,
 			})
 		} else {
 			return nil, nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown Custom variant"}

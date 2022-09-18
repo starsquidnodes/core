@@ -11,13 +11,13 @@ import (
 )
 
 type AuthMsg struct {
-	CreateVestingAccount *MsgCreateVestingAccount `json:"create_vesting_account,omitempty"`
+	CreateVestingAccount *CreateVestingAccount `json:"create_vesting_account,omitempty"`
 }
 
-type MsgCreateVestingAccount struct {
-	ToAddress string    `json:"to_address,omitempty"`
+type CreateVestingAccount struct {
+	ToAddress string    `json:"to_address"`
 	Amount    sdk.Coins `json:"amount"`
-	EndTime   int64     `json:"end_time,omitempty"`
+	EndTime   sdk.Int   `json:"end_time"`
 	Delayed   bool      `json:"delayed,omitempty"`
 }
 
