@@ -409,11 +409,11 @@ func New(
 			fromVM module.VersionMap,
 		) (module.VersionMap, error) {
 			fromVM[ibctransfertypes.ModuleName] = transfer.AppModule{}.ConsensusVersion()
-			app.ParamsKeeper.Subspace(ibctransfertypes.ModuleName).Set(
-				ctx,
-				ibctransfertypes.KeySlashPrefix,
-				ibctransfertypes.DefaultSlashPrefix,
-			)
+			// app.ParamsKeeper.Subspace(ibctransfertypes.ModuleName).Set(
+			// 	ctx,
+			// 	ibctransfertypes.KeySlashPrefix,
+			// 	ibctransfertypes.DefaultSlashPrefix,
+			// )
 
 			return app.mm.RunMigrations(ctx, cfg, fromVM)
 		})
