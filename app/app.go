@@ -408,9 +408,8 @@ func New(
 			plan upgradetypes.Plan,
 			fromVM module.VersionMap,
 		) (module.VersionMap, error) {
-			fromVM[ibctransfertypes.ModuleName] = transfer.AppModule{}.ConsensusVersion()
 			// register new keys
-			ibctransfertypes.ParamKeyTable()
+			app.TransferKeeper.SetParams(ctx, ibctransfertypes.DefaultParams())
 			return app.mm.RunMigrations(ctx, cfg, fromVM)
 		})
 
