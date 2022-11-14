@@ -4,6 +4,8 @@ go 1.18
 
 replace github.com/cosmos/ibc-go/v3 v3.4.0 => github.com/Team-Kujira/ibc-go/v3 v3.4.0-factory
 
+replace github.com/tendermint/tendermint v0.34.23 => github.com/Team-Kujira/tendermint v0.34.23-indexer
+
 replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 
 require (
